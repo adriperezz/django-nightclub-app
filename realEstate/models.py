@@ -1,6 +1,7 @@
 from datetime import date
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
+from localflavor.es.forms import (ESPostalCodeField, ESProvinceSelect)
 
 TYPE_BUSINESS = (
     ('rent', 'Alquilar'),
@@ -38,6 +39,58 @@ FLOOR = (
     ('ground', 'Baja')
 )
 
+WEEKDAYS = [
+  (1, ("Monday")),
+  (2, ("Tuesday")),
+  (3, ("Wednesday")),
+  (4, ("Thursday")),
+  (5, ("Friday")),
+  (6, ("Saturday")),
+  (7, ("Sunday")),
+]
+
+class OpeningHours(models.Model):
+    weekday = models.IntegerField(choices=WEEKDAYS)
+    from_hour = models.TimeField()
+    to_hour = models.TimeField()
+
+    class Meta:
+        ordering = ('weekday', 'from_hour')
+        unique_together = ('weekday', 'from_hour', 'to_hour')
+
+    def __unicode__(self):
+        return u'%s: %s - %s' % (self.get_weekday_display(),
+                                 self.from_hour, self.to_hour)
+class Address(models.Model):
+    street = models.CharField(max_length=120)
+    number = models.CharField(max_length=20)
+    zipCode = models.IntegerField(max_length=5, default=12345)
+    localidad = models.CharField(max_length=50)
+    #province = ESProvinceSelect()
+
+class Office(models.Model):
+    office = models.CharField(max_length=40)
+    description = models.TextField()
+    openingHours = models.ManyToManyField(OpeningHours)
+    phone = models.CharField(max_length=9)
+    #fotos
+    address = models.OneToOneField(Address, on_delete=models.CASCADE)
+
+
+
+class Agent(models.Model):
+    name = models.CharField(max_length=20)
+    lastname = models.CharField(max_length=30)
+    rol = ArrayField(models.CharField(max_length=20))
+    phone = models.CharField(max_length=15)
+    email = models.EmailField()
+    #oficina = models.ForeignKey(Office, on_delete=models.CASCADE, default="0", null=True)
+    #idiomas ver que hacer checkbox
+    #photo
+    description = models.TextField()
+    bestPhrase = models.CharField()
+    linkRRSS = ArrayField(models.CharField(max_length=40))
+    
 class House(models.Model):
     name = models.CharField(max_length=70)
     summary = models.CharField()
@@ -51,7 +104,7 @@ class House(models.Model):
     numBedrooms = models.PositiveIntegerField()
     numBathrooms = models.PositiveIntegerField()
     state = models.CharField(max_length=14, choices=STATE)
-    #caracteristicas
+    caracteristicas = ArrayField(models.CharField(max_length=20, default=None), default=None)
     floor = models.CharField(max_length=12, choices=FLOOR)
     publishedDate = models.DateField(default= date.today)
     address = models.CharField()
@@ -59,20 +112,4 @@ class House(models.Model):
     city = models.CharField()
     country = models.CharField()
     #photos
-    #agent
-
-class Agent(models.Model):
-    name = models.CharField(max_length=20)
-    lastname = models.CharField(max_length=30)
-    rol = ArrayField(models.CharField(max_length=20))
-    phone = models.CharField(max_length=15)
-    email = models.EmailField()
-    #oficina
-    #idiomas ver que hacer checkbox
-    #photo
-    description = models.TextField()
-    bestPhrase = models.CharField()
-    linkRRSS = ArrayField(models.CharField(max_length=40))
-    
-    
-
+    agent = models.ForeignKey(Agent, on_delete=models.CASCADE, default=None)
