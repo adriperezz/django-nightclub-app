@@ -59,14 +59,20 @@ class OpeningHours(models.Model):
         unique_together = ('weekday', 'from_hour', 'to_hour')
 
     def __unicode__(self):
-        return u'%s: %s - %s' % (self.get_weekday_display(),
-                                 self.from_hour, self.to_hour)
+        return f'{self.get_weekday_display()} / {self.from_hour} - {self.to_hour}'
+    
+    def __str__(self):
+        return f'{self.get_weekday_display()} / {self.from_hour} - {self.to_hour}'
+
 class Address(models.Model):
     street = models.CharField(max_length=120)
     number = models.CharField(max_length=20)
-    zipCode = models.IntegerField(max_length=5, default=12345)
+    zipCode = models.IntegerField(default=12345)
     localidad = models.CharField(max_length=50)
-    #province = ESProvinceSelect()
+    province = models.CharField(max_length=50, null=True)
+
+    def __str__(self):
+        return f'{self.street}, {self.number}, {self.zipCode} ({self.localidad})'
 
 class Office(models.Model):
     office = models.CharField(max_length=40)
@@ -76,7 +82,8 @@ class Office(models.Model):
     #fotos
     address = models.OneToOneField(Address, on_delete=models.CASCADE)
 
-
+    def __str__(self):
+        return f"{self.office}"
 
 class Agent(models.Model):
     name = models.CharField(max_length=20)
@@ -84,12 +91,15 @@ class Agent(models.Model):
     rol = ArrayField(models.CharField(max_length=20))
     phone = models.CharField(max_length=15)
     email = models.EmailField()
-    #oficina = models.ForeignKey(Office, on_delete=models.CASCADE, default="0", null=True)
-    #idiomas ver que hacer checkbox
-    #photo
+    oficina = models.ForeignKey(Office, on_delete=models.CASCADE, null=True)
+    idiomas = ArrayField(models.CharField(max_length=25), null=True)
+    photo = models.ImageField(upload_to="realEstate/agentsPhoto/", null=True)
     description = models.TextField()
     bestPhrase = models.CharField()
     linkRRSS = ArrayField(models.CharField(max_length=40))
+
+    def __str__(self):
+        return f"{self.name} {self.lastname} ({self.rol})"
     
 class House(models.Model):
     name = models.CharField(max_length=70)
@@ -111,5 +121,10 @@ class House(models.Model):
     zipCode = models.IntegerField()
     city = models.CharField()
     country = models.CharField()
-    #photos
     agent = models.ForeignKey(Agent, on_delete=models.CASCADE, default=None)
+
+    url = "realEstate/housesPhotos/" + str(reference.name)
+    #photos = ArrayField(models.ImageField(upload_to=url), null=True)
+
+    def __str__(self):
+        return self.name
