@@ -2,7 +2,7 @@ from datetime import date
 import os
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
-from localflavor.es.forms import (ESPostalCodeField, ESProvinceSelect)
+from djangoApp.settings import STATIC_URL
 
 TYPE_BUSINESS = (
     ('rent', 'Alquilar'),
@@ -53,11 +53,11 @@ WEEKDAYS = [
 def uploadOfficeFile(instance, filename):
     
     # Obtener el la referencia del inmueble
-    new_name = f"{instance.reference}"
+    new_name = f"{instance.relatedOffice.reference}"
     # Obtener la extensión del archivo
     _, extension = os.path.splitext(filename)
     #Guardamos la variable de la carpeta donde meter el archivo
-    url = f"realEstate/officesPhotos/{new_name}/"
+    url = f"{STATIC_URL}/uploads/realEstate/officesPhotos/{new_name}/"
     
     #Si hay files en la carpeta, se ejecuta el bloque entero
     try:
@@ -90,11 +90,11 @@ def uploadOfficeFile(instance, filename):
 def uploadHouseFile(instance, filename):
     
     # Obtener el la referencia del inmueble
-    new_name = f"{instance.reference}"
+    new_name = f"{instance.relatedHouse.reference}"
     # Obtener la extensión del archivo
     _, extension = os.path.splitext(filename)
     #Guardamos la variable de la carpeta donde meter el archivo
-    url = f"realEstate/housesPhotos/{new_name}/"
+    url = f"{STATIC_URL}/uploads/realEstate/housesPhotos/{new_name}/"
     
     #Si hay files en la carpeta, se ejecuta el bloque entero
     try:
@@ -130,12 +130,12 @@ def agentFileName(instance, filename):
     
     # Obtener la extensión del archivo
     _, extension = os.path.splitext(filename)
-    url = f"realEstate/housesPhotos/{new_name}{extension}"
+    url = f"{STATIC_URL}/uploads/realEstate/agentsPhoto/{new_name}{extension}"
     if os.path.exists(url):
         os.remove(url)
 
     # Devolver la ruta de destino completa
-    return f"realEstate/agentsPhoto/{new_name}{extension}"
+    return url
 
 class OpeningHours(models.Model):
     weekday = models.IntegerField(choices=WEEKDAYS)
@@ -145,6 +145,7 @@ class OpeningHours(models.Model):
     class Meta:
         ordering = ('weekday', 'from_hour')
         unique_together = ('weekday', 'from_hour', 'to_hour')
+        verbose_name_plural = "Horario"
 
     def __unicode__(self):
         return f'{self.get_weekday_display()} / {self.from_hour} - {self.to_hour}'
@@ -159,6 +160,9 @@ class Address(models.Model):
     localidad = models.CharField(max_length=50)
     province = models.CharField(max_length=50, null=True)
 
+    class Meta:
+        verbose_name_plural = "Direcciones"
+
     def __str__(self):
         return f'{self.street}, {self.number}, {self.zipCode} ({self.localidad})'
 
@@ -168,27 +172,48 @@ class Office(models.Model):
     description = models.TextField()
     openingHours = models.ManyToManyField(OpeningHours)
     phone = models.CharField(max_length=9)
-    address = models.OneToOneField(Address, on_delete=models.CASCADE)
+    address = models.OneToOneField(Address, on_delete=models.SET_NULL, null=True)
+
+    class Meta:
+        verbose_name_plural = "Oficinas"
 
     def __str__(self):
         return f"{self.office}"
     
-class OfficeImage(models.Model):
+class ImageOffice(models.Model):
+    relatedOffice = models.ForeignKey(Office, on_delete=models.CASCADE, null=True)
     image = models.ImageField(upload_to=uploadOfficeFile)
-    office = models.ForeignKey(Office, on_delete=models.CASCADE)
 
-class Agent(models.Model):
+    class Meta:
+        verbose_name_plural = "Imagenes Oficina"
+
+    def __str__(self):
+        _, newName = os.path.split(self.image.name)
+        return f"{self.relatedOffice.office} / {newName}"
+    
+class ContactInfo(models.Model):
     name = models.CharField(max_length=20)
     lastname = models.CharField(max_length=30)
-    rol = ArrayField(models.CharField(max_length=20))
     phone = models.CharField(max_length=15)
     email = models.EmailField()
-    oficina = models.ForeignKey(Office, on_delete=models.CASCADE, null=True)
-    idiomas = ArrayField(models.CharField(max_length=25), null=True)
     photo = models.ImageField(upload_to=agentFileName, null=True)
+
+    class Meta:
+        verbose_name_plural = "Informacion Contacto"
+
+    class Meta:
+        abstract = True
+
+class Agent(ContactInfo):
+    rol = ArrayField(models.CharField(max_length=20))
+    oficina = models.ForeignKey(Office, on_delete=models.SET_NULL, null=True)
+    idiomas = ArrayField(models.CharField(max_length=25), null=True)
     description = models.TextField()
     bestPhrase = models.CharField()
     linkRRSS = ArrayField(models.CharField(max_length=40))
+
+    class Meta:
+        verbose_name_plural = "Agentes"
 
     @property
     def fullName(self):
@@ -217,11 +242,35 @@ class House(models.Model):
     zipCode = models.IntegerField()
     city = models.CharField()
     country = models.CharField()
-    agent = models.ForeignKey(Agent, on_delete=models.CASCADE, default=None)
+    agent = models.ForeignKey(Agent, on_delete=models.SET_NULL, null=True)
+
+    class Meta:
+        verbose_name_plural = "Casas"
 
     def __str__(self):
         return self.name
     
-class HouseImage(models.Model):
+class ImageHouse(models.Model):
+    relatedHouse = models.ForeignKey(House, on_delete=models.CASCADE, null=True)
     image = models.ImageField(upload_to=uploadHouseFile)
-    house = models.ForeignKey(House, on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name_plural = "Imagenes Casas"
+
+    def __str__(self):
+        _, newName = os.path.split(self.image.name)
+        return f"{self.relatedHouse.reference} / {newName}"
+
+class User(ContactInfo):
+    likedHouses = models.ManyToManyField(House, blank=True)
+
+    class Meta:
+        verbose_name_plural = "Usuarios"
+
+    @property
+    def fullName(self):
+        return f"{self.name.lower().replace(' ', '')}{self.lastname.lower().replace(' ', '')}"
+    
+    def __str__(self):
+        return f"{self.name} {self.lastname}"
+    
