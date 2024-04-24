@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime
 import os
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
@@ -156,15 +156,29 @@ class OpeningHours(models.Model):
 class Address(models.Model):
     street = models.CharField(max_length=120)
     number = models.CharField(max_length=20)
-    zipCode = models.IntegerField(default=12345)
+    zipCode = models.IntegerField(default=00000)
     localidad = models.CharField(max_length=50)
     province = models.CharField(max_length=50, null=True)
 
     class Meta:
-        verbose_name_plural = "Direcciones"
+        abstract = True
+    
+class OfficeAddress(Address):
+    class Meta:
+        verbose_name_plural = "Direcciones Oficina"
+        unique_together = ('street', 'number', 'zipCode', 'localidad', 'province')
 
     def __str__(self):
-        return f'{self.street}, {self.number}, {self.zipCode} ({self.localidad})'
+        return f'{self.street}, {self.number}, {self.zipCode} ({self.localidad}, {self.province})'
+
+class HouseAddress(Address):   
+    class Meta:
+        verbose_name_plural = "Direcciones Casa"
+        unique_together = ('street', 'number', 'zipCode', 'localidad', 'province')
+
+    def __str__(self):
+        return f"{self.street}, {self.number}, {self.zipCode} ({self.localidad}, {self.province})"
+
 
 class Office(models.Model):
     office = models.CharField(max_length=40)
@@ -172,7 +186,7 @@ class Office(models.Model):
     description = models.TextField()
     openingHours = models.ManyToManyField(OpeningHours)
     phone = models.CharField(max_length=9)
-    address = models.OneToOneField(Address, on_delete=models.SET_NULL, null=True)
+    address = models.OneToOneField(OfficeAddress, on_delete=models.SET_NULL, null=True)
 
     class Meta:
         verbose_name_plural = "Oficinas"
@@ -196,7 +210,7 @@ class ContactInfo(models.Model):
     lastname = models.CharField(max_length=30)
     phone = models.CharField(max_length=15)
     email = models.EmailField()
-    photo = models.ImageField(upload_to=agentFileName, null=True)
+    photo = models.ImageField(upload_to=agentFileName, null=True, blank=True)
 
     class Meta:
         verbose_name_plural = "Informacion Contacto"
@@ -237,11 +251,8 @@ class House(models.Model):
     state = models.CharField(max_length=14, choices=STATE)
     caracteristicas = ArrayField(models.CharField(max_length=20, default=None), default=None)
     floor = models.CharField(max_length=12, choices=FLOOR)
-    publishedDate = models.DateField(default= date.today)
-    address = models.CharField()
-    zipCode = models.IntegerField()
-    city = models.CharField()
-    country = models.CharField()
+    publishedDate = models.DateTimeField(default= datetime.now())
+    address = models.OneToOneField(HouseAddress, on_delete=models.SET_NULL, null=True)
     agent = models.ForeignKey(Agent, on_delete=models.SET_NULL, null=True)
 
     class Meta:
@@ -264,12 +275,12 @@ class ImageHouse(models.Model):
 class User(ContactInfo):
     likedHouses = models.ManyToManyField(House, blank=True)
 
-    class Meta:
-        verbose_name_plural = "Usuarios"
-
     @property
     def fullName(self):
         return f"{self.name.lower().replace(' ', '')}{self.lastname.lower().replace(' ', '')}"
+
+    class Meta:
+        verbose_name_plural = "Usuarios"
     
     def __str__(self):
         return f"{self.name} {self.lastname}"
