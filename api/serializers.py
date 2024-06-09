@@ -27,6 +27,7 @@ class ImageOfficeSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class AgentSerializer(serializers.ModelSerializer):
+    fullName = serializers.ReadOnlyField()
     class Meta:
         model = Agent
         fields = '__all__'

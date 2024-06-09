@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, timezone
 import os
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
@@ -7,7 +7,8 @@ from djangoApp.settings import STATIC_URL
 TYPE_BUSINESS = (
     ('rent', 'Alquilar'),
     ('sell', 'Vender'),
-    ('transfer', 'Traspasar')
+    ('transfer', 'Traspasar'),
+    ('sold', 'Vendido')
 )
 
 TYPE_HOUSE = (
@@ -20,7 +21,8 @@ TYPE_HOUSE = (
         ('independiente', 'Independiente'),
         ('pareado', 'Pareado'),
         ('adosada', 'Adosada'),
-        ('casa_rustica', 'Casa rustica')
+        ('casa_rustica', 'Casa rustica'),
+        ('villa', 'Villa')
     )),
     ('Comerciales', (
         ('trastero', 'Trastero'),
@@ -37,7 +39,8 @@ STATE = (
 FLOOR = (
     ('last', 'Ultima'),
     ('middle', 'Intermedias'),
-    ('ground', 'Baja')
+    ('ground', 'Baja'),
+    ('none', 'None')
 )
 
 WEEKDAYS = [
@@ -124,6 +127,20 @@ def uploadHouseFile(instance, filename):
 
     return url
 
+def uploadMainPhoto(instance, filename):
+    
+    # Obtener el la referencia del inmueble
+    new_name = f"{instance.reference}"
+    # Obtener la extensión del archivo
+    _, extension = os.path.splitext(filename)
+    #Guardamos la variable de la carpeta donde meter el archivo
+    url = f"{STATIC_URL}/uploads/realEstate/housesPhotos/{new_name}/0_mainPhoto{extension}"
+
+    if os.path.exists(url):
+        os.remove(url)
+
+    return url
+
 def agentFileName(instance, filename):
     # Obtener el nombre y apellido del agente
     new_name = f"{instance.fullName}"
@@ -158,7 +175,8 @@ class Address(models.Model):
     number = models.CharField(max_length=20)
     zipCode = models.IntegerField(default=00000)
     localidad = models.CharField(max_length=50)
-    province = models.CharField(max_length=50, null=True)
+    province = models.CharField(max_length=50)
+    country = models.CharField(max_length=40)
 
     class Meta:
         abstract = True
@@ -251,15 +269,22 @@ class House(models.Model):
     state = models.CharField(max_length=14, choices=STATE)
     caracteristicas = ArrayField(models.CharField(max_length=20, default=None), default=None)
     floor = models.CharField(max_length=12, choices=FLOOR)
-    publishedDate = models.DateTimeField(default= datetime.now())
+    publishedDate = models.DateTimeField(auto_now_add=True)
+    construction_year = models.PositiveIntegerField(default=date.today().year)
     address = models.OneToOneField(HouseAddress, on_delete=models.SET_NULL, null=True)
     agent = models.ForeignKey(Agent, on_delete=models.SET_NULL, null=True)
+    mainPhoto = models.ImageField(upload_to=uploadMainPhoto, null=True, blank=True)
 
     class Meta:
         verbose_name_plural = "Casas"
 
     def __str__(self):
         return self.name
+    
+    """def save(self, *args, **kwargs):
+        if not self.id:  # Si es una nueva instancia (no tiene ID)
+            self.publishedDate = timezone.now()  # Establecer la fecha y hora actual
+        super().save(*args, **kwargs)"""
     
 class ImageHouse(models.Model):
     relatedHouse = models.ForeignKey(House, on_delete=models.CASCADE, null=True)

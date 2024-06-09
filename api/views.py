@@ -245,10 +245,10 @@ def housesList(request):
     serializers = HouseSerializer(houses, many=True)
     return Response(serializers.data)
 
-### api/houses/detail/<str:id>/
+### api/houses/detail/<str:ref>/
 @api_view(['GET'])
-def houseDetail(request, id):
-    house = House.objects.get(id=id)
+def houseDetail(request, ref):
+    house = House.objects.get(reference=ref)
     serializers = HouseSerializer(house, many=False)
     return Response(serializers.data)
 
@@ -284,6 +284,7 @@ def houseDelete(request, id):
 def apiImageHouses(request):
     image_houses_url = {
         'List': '/list/',
+        'All Images From House': '/house/<str:id>/',
         'Detail View': '/detail/<str:id>/',
         'Create': '/create/',
         'Delete': '/delete/<str:id>/'
@@ -295,6 +296,13 @@ def apiImageHouses(request):
 def imageHousesList(request):
     imageHouses = ImageHouse.objects.all()
     serializers = ImageHouseSerializer(imageHouses, many=True)
+    return Response(serializers.data)
+
+### api/image-houses/house/str:id>/
+@api_view(['GET'])
+def imageHouseSpecificHouse(request, id):
+    imageHouseSpecificHouse = ImageHouse.objects.filter(relatedHouse = id)
+    serializers = ImageHouseSerializer(imageHouseSpecificHouse, many=True)
     return Response(serializers.data)
 
 ### api/image-houses/detail/<str:id>/
@@ -379,6 +387,7 @@ def agentDelete(request, id):
 def apiUsers(request):
     users_url = {
         'List': '/list/',
+        'List Photos Specific House': '/list/<str:id>/',
         'Detail View': '/detail/<str:id>/',
         'Create': '/create/',
         'Update': '/update/<str:id>/', 

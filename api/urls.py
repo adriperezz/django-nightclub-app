@@ -32,13 +32,14 @@ urlpatterns = [
 
     path('houses/', views.apiHouses, name="Casas"),
     path('houses/list/', views.housesList, name="Lista Casas"),
-    path('houses/detail/<str:id>/', views.houseDetail, name="Detalles Casa"),
+    path('houses/detail/<str:ref>/', views.houseDetail, name="Detalles Casa"),
     path('houses/create/', views.houseCreate, name="Crear Casa"),
     path('houses/update/<str:id>/', views.houseUpdate, name="Actualizar Casa"),
     path('houses/delete/<str:id>/', views.houseDelete, name="Borrar Casa"),
 
     path('image-houses/', views.apiImageHouses, name="Imagenes Casas"),
     path('image-houses/list/', views.imageHousesList, name="Lista Imagenes Casas"),
+    path('image-houses/house/<str:id>/', views.imageHouseSpecificHouse, name="Lista Imagenes Casas"),
     path('image-houses/detail/<str:id>/', views.imageHouseDetail , name="Detalles Imagen Casa"),
     path('image-houses/create/', views.imageHouseCreate, name="Crear Imagen Casa"),
     path('image-houses/delete/<str:id>/', views.imageHouseDelete, name="Borrar Imagen Casa"),
