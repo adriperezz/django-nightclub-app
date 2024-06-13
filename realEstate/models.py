@@ -237,12 +237,9 @@ class ContactInfo(models.Model):
         abstract = True
 
 class Agent(ContactInfo):
-    rol = ArrayField(models.CharField(max_length=20))
+    rol = models.CharField(max_length=20)
     oficina = models.ForeignKey(Office, on_delete=models.SET_NULL, null=True)
-    idiomas = ArrayField(models.CharField(max_length=25), null=True)
-    description = models.TextField()
-    bestPhrase = models.CharField()
-    linkRRSS = ArrayField(models.CharField(max_length=40))
+    idiomas = ArrayField(models.CharField(max_length=25), null=True, blank=True)
 
     class Meta:
         verbose_name_plural = "Agentes"
@@ -297,16 +294,4 @@ class ImageHouse(models.Model):
         _, newName = os.path.split(self.image.name)
         return f"{self.relatedHouse.reference} / {newName}"
 
-class User(ContactInfo):
-    likedHouses = models.ManyToManyField(House, blank=True)
-
-    @property
-    def fullName(self):
-        return f"{self.name.lower().replace(' ', '')}{self.lastname.lower().replace(' ', '')}"
-
-    class Meta:
-        verbose_name_plural = "Usuarios"
-    
-    def __str__(self):
-        return f"{self.name} {self.lastname}"
     

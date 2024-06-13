@@ -51,10 +51,4 @@ urlpatterns = [
     path('agents/update/<str:id>/', views.agentUpdate, name="Actualizar Agentes"),
     path('agents/delete/<str:id>/', views.agentDelete, name="Borrar Agente"),
 
-    path('users/', views.apiUsers, name="Usuarios"),
-    path('users/list/', views.usersList, name="Lista Usuarios"),
-    path('users/detail/<str:id>/', views.userDetail , name="Detalles Usuario"),
-    path('users/create/', views.userCreate, name="Crear Usuario"),
-    path('users/update/<str:id>/', views.userUpdate, name="Actualizar Usuario"),
-    path('users/delete/<str:id>/', views.userDelete, name="Borrar Usuario"),
 ]
