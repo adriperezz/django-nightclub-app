@@ -278,11 +278,6 @@ class House(models.Model):
     def __str__(self):
         return self.name
     
-    """def save(self, *args, **kwargs):
-        if not self.id:  # Si es una nueva instancia (no tiene ID)
-            self.publishedDate = timezone.now()  # Establecer la fecha y hora actual
-        super().save(*args, **kwargs)"""
-    
 class ImageHouse(models.Model):
     relatedHouse = models.ForeignKey(House, on_delete=models.CASCADE, null=True)
     image = models.ImageField(upload_to=uploadHouseFile)
